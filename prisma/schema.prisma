@@ -10,23 +10,157 @@ generator client {
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
+  url      = "file:./db/custom.db"
 }
 
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Party {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  type        String   // 'UTILITY', 'IPP', 'OIL_COMPANY', 'REGULATOR'
+  code        String   @unique
+  isActive    Boolean  @default(true)
+  contactInfo String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  invoices         Invoice[] @relation("InvoicesIssued")
+  payments         Payment[] @relation("PaymentsMade")
+  paymentsReceived Payment[] @relation("PaymentsReceived")
+  invoicesReceived Invoice[] @relation("InvoicesReceived")
+  disputes         Dispute[]
+  settlementBatches SettlementBatch[]
+
+  @@map("parties")
 }
 
-model Post {
-  id        String   @id @default(cuid())
-  title     String
-  content   String?
-  published Boolean  @default(false)
-  authorId  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model Invoice {
+  id              String   @id @default(cuid())
+  invoiceNumber   String   @unique
+  issuerId        String
+  recipientId     String
+  amount          Float
+  currency        String   @default("GHS")
+  issueDate       DateTime
+  dueDate         DateTime
+  status          String   @default("PENDING") // 'PENDING', 'APPROVED', 'DISPUTED', 'PAID', 'SETTLED'
+  type            String   // 'ELECTRICITY', 'GAS', 'FUEL', 'SERVICES'
+  description     String?
+  metadata        Json?    // Additional invoice data
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  issuer    Party     @relation("InvoicesIssued", fields: [issuerId], references: [id])
+  recipient Party     @relation("InvoicesReceived", fields: [recipientId], references: [id])
+  disputes  Dispute[]
+  settlements SettlementItem[]
+
+  @@map("invoices")
+}
+
+model Payment {
+  id              String   @id @default(cuid())
+  paymentNumber   String   @unique
+  payerId         String
+  receiverId      String
+  amount          Float
+  currency        String   @default("GHS")
+  paymentDate     DateTime
+  status          String   @default("PENDING") // 'PENDING', 'PROCESSING', 'COMPLETED', 'FAILED'
+  paymentMethod   String   // 'BANK_TRANSFER', 'NETTING', 'OFFSET'
+  referenceNumber String?
+  metadata        Json?    // Additional payment data
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  payer    Party @relation("PaymentsMade", fields: [payerId], references: [id])
+  receiver Party @relation("PaymentsReceived", fields: [receiverId], references: [id])
+
+  @@map("payments")
+}
+
+model Dispute {
+  id              String   @id @default(cuid())
+  disputeNumber   String   @unique
+  invoiceId       String?
+  partyId         String
+  type            String   // 'PRICE_VARIANCE', 'QUANTITY_VARIANCE', 'QUALITY', 'DELIVERY'
+  description     String
+  status          String   @default("OPEN") // 'OPEN', 'UNDER_REVIEW', 'RESOLVED', 'REJECTED'
+  priority        String   @default("MEDIUM") // 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'
+  amount          Float?
+  resolutionNotes String?
+  resolvedAt      DateTime?
+  resolvedBy      String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  invoice Invoice? @relation(fields: [invoiceId], references: [id])
+  party   Party    @relation(fields: [partyId], references: [id])
+
+  @@map("disputes")
+}
+
+model SettlementBatch {
+  id              String   @id @default(cuid())
+  batchNumber     String   @unique
+  settlementDate  DateTime
+  totalAmount     Float
+  currency        String   @default("GHS")
+  status          String   @default("PENDING") // 'PENDING', 'PROCESSING', 'COMPLETED', 'FAILED'
+  nettingApplied  Boolean  @default(false)
+  reductionRate   Float?   // Percentage reduction in cash movements
+  metadata        Json?    // Settlement calculation data
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  parties  Party[]          // Parties involved in this settlement
+  items    SettlementItem[]
+
+  @@map("settlement_batches")
+}
+
+model SettlementItem {
+  id               String   @id @default(cuid())
+  settlementBatchId String
+  invoiceId        String?
+  amount           Float
+  direction        String   // 'INBOUND', 'OUTBOUND'
+  netAmount        Float?   // Amount after netting
+  status           String   @default("PENDING")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  settlementBatch SettlementBatch @relation(fields: [settlementBatchId], references: [id])
+  invoice         Invoice?         @relation(fields: [invoiceId], references: [id])
+
+  @@map("settlement_items")
+}
+
+model ReconciliationLog {
+  id            String   @id @default(cuid())
+  runDate       DateTime @default(now())
+  totalInvoices Int      @default(0)
+  matchedInvoices Int    @default(0)
+  exceptions    Int      @default(0)
+  status        String   @default("RUNNING") // 'RUNNING', 'COMPLETED', 'FAILED'
+  errorMessage  String?
+  metadata      Json?    // Detailed reconciliation results
+  createdAt     DateTime @default(now())
+
+  @@map("reconciliation_logs")
+}
+
+model NettingSession {
+  id            String   @id @default(cuid())
+  sessionDate   DateTime @default(now())
+  totalParties  Int      @default(0)
+  totalAmount   Float    @default(0)
+  nettedAmount  Float    @default(0)
+  reductionRate Float    @default(0)
+  status        String   @default("PENDING") // 'PENDING', 'PROCESSING', 'COMPLETED', 'FAILED'
+  errorMessage  String?
+  metadata      Json?    // Netting calculation details
+  createdAt     DateTime @default(now())
+
+  @@map("netting_sessions")
 }
