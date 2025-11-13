@@ -66,7 +66,7 @@ export async function POST() {
         invoiceNumber: `I000${String(invoiceCounter++).padStart(3, '0')}`,
         issuerId: parties[0].id, // ECG
         recipientId: parties[4].id, // IPP Alpha
-        amount: 45000000 + Math.random() * 10000000,
+        amount: 450000000 + Math.random() * 10000000,
         issueDate: new Date(2024, 10, Math.floor(Math.random() * 28) + 1),
         dueDate: new Date(2024, 11, Math.floor(Math.random() * 28) + 1),
         type: "ELECTRICITY",
@@ -80,7 +80,7 @@ export async function POST() {
         invoiceNumber: `I000${String(invoiceCounter++).padStart(3, '0')}`,
         issuerId: parties[0].id, // ECG
         recipientId: parties[5].id, // IPP Beta
-        amount: 38000000 + Math.random() * 8000000,
+        amount: 380000000 + Math.random() * 80000000,
         issueDate: new Date(2024, 10, Math.floor(Math.random() * 28) + 1),
         dueDate: new Date(2024, 11, Math.floor(Math.random() * 28) + 1),
         type: "ELECTRICITY",
@@ -95,7 +95,7 @@ export async function POST() {
         invoiceNumber: `I000${String(invoiceCounter++).padStart(3, '0')}`,
         issuerId: parties[2].id, // GNPC
         recipientId: parties[1].id, // VRA
-        amount: 25000000 + Math.random() * 15000000,
+        amount: 250000000 + Math.random() * 150000000,
         issueDate: new Date(2024, 10, Math.floor(Math.random() * 28) + 1),
         dueDate: new Date(2024, 11, Math.floor(Math.random() * 28) + 1),
         type: "GAS",
@@ -110,7 +110,7 @@ export async function POST() {
         invoiceNumber: `I000${String(invoiceCounter++).padStart(3, '0')}`,
         issuerId: parties[3].id, // BOST
         recipientId: parties[1].id, // VRA
-        amount: 12000000 + Math.random() * 8000000,
+        amount: 120000000 + Math.random() * 80000000,
         issueDate: new Date(2024, 10, Math.floor(Math.random() * 28) + 1),
         dueDate: new Date(2024, 11, Math.floor(Math.random() * 28) + 1),
         type: "FUEL",
